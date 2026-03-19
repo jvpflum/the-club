@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type AgentStatus = "working" | "thinking" | "idle" | "done" | "error";
-export type View = "floor" | "calendar" | "skills" | "feed" | "sandbox";
+export type View = "floor" | "calendar" | "skills" | "feed" | "sandbox" | "livebuild";
 
 export interface Agent {
   id: string;

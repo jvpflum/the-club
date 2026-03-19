@@ -7,6 +7,7 @@ import { MissionCalendar } from "./views/MissionCalendar";
 import { BriefingFeed } from "./views/BriefingFeed";
 import { SkillsLab } from "./views/SkillsLab";
 import { Sandbox } from "./views/Sandbox";
+import { LiveBuild } from "./views/LiveBuild";
 import { useClubStore } from "./store/useClubStore";
 
 function ViewContent() {
@@ -27,6 +28,7 @@ function ViewContent() {
         {view === "feed" && <BriefingFeed />}
         {view === "skills" && <SkillsLab />}
         {view === "sandbox" && <Sandbox />}
+        {view === "livebuild" && <LiveBuild />}
       </motion.div>
     </AnimatePresence>
   );

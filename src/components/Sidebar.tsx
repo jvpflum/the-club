@@ -7,6 +7,7 @@ const NAV: { view: View; emoji: string; label: string }[] = [
   { view: "feed", emoji: "📡", label: "Briefing Feed" },
   { view: "skills", emoji: "🛠️", label: "Skills Lab" },
   { view: "sandbox", emoji: "🧪", label: "Sandbox" },
+  { view: "livebuild", emoji: "🔴", label: "Live Build" },
 ];
 
 export function Sidebar() {
