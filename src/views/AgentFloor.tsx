@@ -3,121 +3,205 @@ import { useClubStore } from "../store/useClubStore";
 import { AgentCharacter } from "../components/AgentCharacter";
 
 export function AgentFloor() {
-  const { agents } = useClubStore();
+  const agents = useClubStore(s => s.agents);
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      {/* Sky gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-ocean-800 via-ocean-600 to-ocean-400" />
+    <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
 
-      {/* Sun */}
-      <motion.div
-        animate={{ y: [0, -8, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-8 right-16 w-16 h-16 rounded-full bg-gradient-to-br from-sand-300 to-sand-500 shadow-[0_0_60px_rgba(212,146,42,0.6)]"
-      />
+      {/* ── Sky ── */}
+      <div style={{
+        position: "absolute", inset: 0,
+        background: "linear-gradient(180deg, #0a1628 0%, #0d2240 35%, #0e3a5c 60%, #1a5f7a 80%, #2d8a6e 92%, #3aaa6a 100%)",
+      }} />
 
-      {/* Clouds */}
-      {[
-        { x: "10%", y: 30, scale: 1, delay: 0 },
-        { x: "40%", y: 20, scale: 0.7, delay: 1 },
-        { x: "70%", y: 40, scale: 1.2, delay: 2 },
-      ].map((cloud, i) => (
+      {/* ── Stars ── */}
+      {Array.from({ length: 40 }).map((_, i) => (
         <motion.div
           key={i}
-          animate={{ x: [0, 20, 0] }}
-          transition={{ duration: 8 + i * 2, repeat: Infinity, ease: "easeInOut", delay: cloud.delay }}
-          className="absolute text-4xl opacity-80"
-          style={{ left: cloud.x, top: cloud.y, fontSize: `${2 * cloud.scale}rem` }}
-        >
-          ☁️
-        </motion.div>
+          animate={{ opacity: [0.2, 0.9, 0.2] }}
+          transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, delay: Math.random() * 4 }}
+          style={{
+            position: "absolute",
+            width: Math.random() > 0.8 ? 2 : 1,
+            height: Math.random() > 0.8 ? 2 : 1,
+            borderRadius: "50%",
+            background: "white",
+            top: `${Math.random() * 45}%`,
+            left: `${Math.random() * 100}%`,
+          }}
+        />
       ))}
 
-      {/* Ocean */}
+      {/* ── Moon ── */}
       <motion.div
-        animate={{ scaleY: [1, 1.02, 1] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-[28%] left-0 right-0 h-[30%] bg-gradient-to-b from-ocean-500/80 to-ocean-700/90"
-        style={{ borderRadius: "50% 50% 0 0 / 20px 20px 0 0" }}
-      />
-
-      {/* Wave line */}
-      <motion.div
-        animate={{ x: [0, -20, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-[27%] left-0 right-0 h-3 opacity-60"
+        animate={{ y: [0, -5, 0] }}
+        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
         style={{
-          background: "repeating-linear-gradient(90deg, transparent 0px, rgba(255,255,255,0.3) 10px, transparent 20px)",
+          position: "absolute", top: 24, right: 60,
+          width: 48, height: 48, borderRadius: "50%",
+          background: "radial-gradient(circle at 35% 35%, #fef3c7, #fde68a)",
+          boxShadow: "0 0 30px rgba(253,230,138,0.35), 0 0 60px rgba(253,230,138,0.15)",
         }}
       />
 
-      {/* Beach sand */}
-      <div className="absolute bottom-0 left-0 right-0 h-[30%] bg-gradient-to-t from-sand-400 to-sand-200" />
+      {/* ── Clouds ── */}
+      {[
+        { left: "8%",  top: 55,  scale: 1,    delay: 0,   duration: 12 },
+        { left: "35%", top: 38,  scale: 0.65, delay: 2,   duration: 16 },
+        { left: "62%", top: 28,  scale: 0.8,  delay: 1,   duration: 14 },
+      ].map((c, i) => (
+        <motion.div
+          key={i}
+          animate={{ x: [0, 15, 0] }}
+          transition={{ duration: c.duration, repeat: Infinity, ease: "easeInOut", delay: c.delay }}
+          style={{ position: "absolute", left: c.left, top: c.top, fontSize: `${2.4 * c.scale}rem`, opacity: 0.55, filter: "blur(0.5px)" }}
+        >☁️</motion.div>
+      ))}
 
-      {/* Beach items */}
-      <div className="absolute bottom-[30%] left-[5%] text-3xl">🌴</div>
-      <div className="absolute bottom-[30%] right-[8%] text-3xl">🌴</div>
+      {/* ── Ocean ── */}
       <motion.div
-        animate={{ rotate: [0, 5, 0] }}
+        animate={{ scaleY: [1, 1.015, 1] }}
+        transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          bottom: "28%", left: "-5%", right: "-5%",
+          height: "32%",
+          background: "linear-gradient(180deg, rgba(14,165,233,0.55) 0%, rgba(7,89,133,0.85) 60%, rgba(6,56,100,0.95) 100%)",
+          borderRadius: "50% 50% 0 0 / 30px 30px 0 0",
+        }}
+      />
+
+      {/* ── Wave shimmer ── */}
+      <motion.div
+        animate={{ x: [0, -30, 0] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          position: "absolute",
+          bottom: "27.5%", left: 0, right: 0,
+          height: 12,
+          background: "repeating-linear-gradient(90deg, transparent 0, rgba(255,255,255,0.18) 12px, transparent 24px)",
+          borderRadius: "50%",
+        }}
+      />
+
+      {/* ── Beach sand ── */}
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0, height: "30%",
+        background: "linear-gradient(180deg, #c8a96e 0%, #d4b483 30%, #e8c99a 70%, #f0d8b0 100%)",
+      }} />
+
+      {/* ── Sand texture overlay ── */}
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0, height: "30%",
+        backgroundImage: "radial-gradient(ellipse at 20% 20%, rgba(180,140,80,0.3) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(160,120,60,0.2) 0%, transparent 50%)",
+      }} />
+
+      {/* ── Palm trees ── */}
+      {[{ x: "4%", scale: 1.1 }, { x: "88%", scale: 0.9 }].map((p, i) => (
+        <motion.div
+          key={i}
+          animate={{ rotate: i === 0 ? [-2, 2, -2] : [2, -2, 2] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          style={{
+            position: "absolute",
+            bottom: "28%",
+            left: p.x,
+            fontSize: `${3 * p.scale}rem`,
+            transformOrigin: "bottom center",
+            filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.4))",
+          }}
+        >🌴</motion.div>
+      ))}
+
+      {/* ── Umbrella + chair ── */}
+      <div style={{ position: "absolute", bottom: "29.5%", left: "14%", fontSize: "1.6rem", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.3))" }}>⛱️</div>
+      <div style={{ position: "absolute", bottom: "28.5%", right: "18%", fontSize: "1.3rem" }}>🏄</div>
+      <motion.div
+        animate={{ y: [0, -3, 0] }}
         transition={{ duration: 2, repeat: Infinity }}
-        className="absolute bottom-[29%] left-[15%] text-xl"
-      >
-        ⛱️
-      </motion.div>
-      <div className="absolute bottom-[28%] right-[20%] text-xl">🏄</div>
+        style={{ position: "absolute", bottom: "28.5%", right: "30%", fontSize: "1rem" }}
+      >🦀</motion.div>
 
-      {/* Agent desks area — the "office on the beach" */}
-      <div className="absolute bottom-[30%] left-0 right-0 flex justify-center">
-        <div className="glass rounded-2xl px-6 py-2 flex items-end gap-2 mb-1">
-          <span className="text-white/50 text-[10px] tracking-widest uppercase">Agent Floor</span>
-        </div>
+      {/* ── "Agent Floor" label ── */}
+      <div style={{
+        position: "absolute",
+        bottom: "30%",
+        left: "50%",
+        transform: "translateX(-50%)",
+        background: "rgba(6,13,26,0.55)",
+        border: "1px solid rgba(255,255,255,0.10)",
+        backdropFilter: "blur(12px)",
+        borderRadius: 99,
+        padding: "4px 16px",
+        color: "rgba(255,255,255,0.45)",
+        fontSize: 10,
+        fontWeight: 600,
+        letterSpacing: "0.1em",
+        textTransform: "uppercase",
+        whiteSpace: "nowrap",
+      }}>
+        Agent Floor
       </div>
 
-      {/* Agents */}
-      <div className="absolute bottom-[32%] left-0 right-0 px-8">
-        <div className="flex flex-wrap gap-6 justify-center items-end">
-          <AnimatePresence>
-            {agents.map((agent) => (
-              <AgentCharacter key={agent.id} agent={agent} />
-            ))}
-          </AnimatePresence>
-        </div>
+      {/* ── Agent characters ── */}
+      <div style={{
+        position: "absolute",
+        bottom: "33%",
+        left: 0, right: 0,
+        display: "flex",
+        justifyContent: "center",
+        flexWrap: "wrap",
+        gap: 24,
+        padding: "0 40px",
+      }}>
+        <AnimatePresence>
+          {agents.map(agent => <AgentCharacter key={agent.id} agent={agent} />)}
+        </AnimatePresence>
       </div>
 
-      {/* Spawn new agent button */}
+      {/* ── Stats bar (top-left) ── */}
+      <div style={{ position: "absolute", top: 16, left: 16, display: "flex", gap: 8 }}>
+        {[
+          { icon: "🏖️", val: `${agents.length} agents` },
+          { icon: "⚡", val: `${agents.filter(a => a.status !== "idle").length} active` },
+        ].map(s => (
+          <div key={s.val} style={{
+            display: "flex", alignItems: "center", gap: 6,
+            background: "rgba(6,13,26,0.60)", border: "1px solid rgba(255,255,255,0.10)",
+            backdropFilter: "blur(12px)", borderRadius: 99, padding: "4px 12px",
+            fontSize: 11, color: "rgba(255,255,255,0.65)",
+          }}>
+            <span>{s.icon}</span><span>{s.val}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Spawn button ── */}
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="absolute bottom-4 right-4 glass px-4 py-2 rounded-xl text-white/80 text-sm font-medium flex items-center gap-2 hover:bg-white/20 transition-all"
         onClick={() => {
-          const { addAgent } = useClubStore.getState();
-          addAgent({
+          useClubStore.getState().addAgent({
             id: `agent-${Date.now()}`,
             name: "Sub-Agent",
-            emoji: ["🤖", "🦾", "💡", "⚡", "🔬"][Math.floor(Math.random() * 5)],
+            emoji: ["🤖","🦾","💡","⚡","🔬"][Math.floor(Math.random() * 5)],
             status: "working",
-            task: "Spawning new task...",
+            task: "Running task...",
             spawnedAt: new Date(),
-            position: { x: Math.random() * 80, y: 60 },
+            position: { x: 50, y: 60 },
           });
         }}
+        style={{
+          position: "absolute", bottom: 16, right: 16,
+          display: "flex", alignItems: "center", gap: 8,
+          background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.30)",
+          backdropFilter: "blur(16px)", borderRadius: 12, padding: "8px 16px",
+          color: "var(--ocean)", fontSize: 12, fontWeight: 600,
+          cursor: "pointer", letterSpacing: "0.02em",
+        }}
       >
-        <span>+ Spawn Agent</span>
-        <span>🤖</span>
+        <span>+ Spawn Agent</span><span>🤖</span>
       </motion.button>
-
-      {/* Stats bar */}
-      <div className="absolute top-4 left-4 flex gap-3">
-        <div className="glass px-3 py-1.5 rounded-xl text-white/70 text-xs flex items-center gap-2">
-          <span className="text-palm-400">●</span>
-          <span>{agents.filter(a => a.status !== "idle").length} active</span>
-        </div>
-        <div className="glass px-3 py-1.5 rounded-xl text-white/70 text-xs flex items-center gap-2">
-          <span>🏖️</span>
-          <span>{agents.length} agents</span>
-        </div>
-      </div>
     </div>
   );
 }

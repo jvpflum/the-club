@@ -1,44 +1,50 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useClubStore, FeedItem } from "../store/useClubStore";
-import { clsx } from "clsx";
 
-const TYPE_CONFIG = {
-  brief: { emoji: "☀️", color: "text-sand-400", label: "Morning Brief" },
-  alert: { emoji: "🚨", color: "text-coral-400", label: "Alert" },
-  heartbeat: { emoji: "💓", color: "text-ocean-400", label: "Heartbeat" },
-  agent: { emoji: "🤖", color: "text-palm-400", label: "Agent" },
-  system: { emoji: "⚙️", color: "text-white/40", label: "System" },
+const TYPE = {
+  brief:     { emoji: "☀️", color: "var(--sand)",  label: "Morning Brief" },
+  alert:     { emoji: "🚨", color: "var(--coral)", label: "Alert" },
+  heartbeat: { emoji: "💓", color: "var(--ocean)", label: "Heartbeat" },
+  agent:     { emoji: "🤖", color: "var(--palm)",  label: "Agent" },
+  system:    { emoji: "⚙️", color: "var(--text-muted)", label: "System" },
 };
 
-function FeedCard({ item }: { item: FeedItem }) {
+function Card({ item }: { item: FeedItem }) {
   const { markFeedRead } = useClubStore();
-  const cfg = TYPE_CONFIG[item.type];
-
+  const t = TYPE[item.type] || TYPE.system;
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      layout
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={() => markFeedRead(item.id)}
-      className={clsx(
-        "glass rounded-2xl p-4 cursor-pointer transition-all hover:bg-white/15",
-        !item.read && "border-l-2 border-ocean-400"
-      )}
+      style={{
+        background: "var(--bg-surface)",
+        border: `1px solid ${!item.read ? "rgba(56,189,248,0.25)" : "var(--border)"}`,
+        borderLeft: !item.read ? `3px solid var(--ocean)` : "1px solid var(--border)",
+        borderRadius: 14,
+        padding: "14px 16px",
+        cursor: "pointer",
+        display: "flex",
+        gap: 12,
+        transition: "background 0.15s",
+      }}
     >
-      <div className="flex items-start gap-3">
-        <div className="text-xl flex-shrink-0">{cfg.emoji}</div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className={clsx("text-[10px] uppercase tracking-widest font-semibold", cfg.color)}>
-              {cfg.label}
-            </span>
-            <span className="text-white/30 text-[10px]">
-              {item.timestamp.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-            </span>
-            {!item.read && <div className="w-1.5 h-1.5 rounded-full bg-ocean-400 ml-auto" />}
-          </div>
-          <div className="text-white text-sm font-semibold mb-1">{item.title}</div>
-          <div className="text-white/60 text-xs leading-relaxed line-clamp-3">{item.body}</div>
+      <div style={{ fontSize: 20, flexShrink: 0 }}>{t.emoji}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: t.color }}>
+            {t.label}
+          </span>
+          <span style={{ color: "var(--text-faint)", fontSize: 10 }}>
+            {item.timestamp.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+          </span>
+          {!item.read && (
+            <div style={{ marginLeft: "auto", width: 6, height: 6, borderRadius: "50%", background: "var(--ocean)", boxShadow: "0 0 6px rgba(56,189,248,0.6)" }} />
+          )}
         </div>
+        <div style={{ color: "var(--text-primary)", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{item.title}</div>
+        <div style={{ color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{item.body}</div>
       </div>
     </motion.div>
   );
@@ -46,37 +52,40 @@ function FeedCard({ item }: { item: FeedItem }) {
 
 export function BriefingFeed() {
   const { feed } = useClubStore();
-  const unread = feed.filter((f) => !f.read).length;
+  const unread = feed.filter(f => !f.read).length;
 
   return (
-    <div className="h-full flex flex-col p-6 gap-4 overflow-hidden">
-      <div className="flex items-center justify-between">
+    <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: 24, gap: 20, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
         <div>
-          <h1 className="text-white text-2xl font-bold">Briefing Feed</h1>
-          <p className="text-white/50 text-sm">
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)" }}>Briefing Feed</h1>
+          <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
             {unread > 0 ? `${unread} unread` : "All caught up ✓"}
           </p>
         </div>
         {unread > 0 && (
-          <button
-            className="glass px-4 py-2 rounded-xl text-white/60 text-sm hover:bg-white/20 transition-all"
-            onClick={() => feed.forEach((f) => useClubStore.getState().markFeedRead(f.id))}
-          >
-            Mark all read
-          </button>
+          <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+            onClick={() => feed.forEach(f => useClubStore.getState().markFeedRead(f.id))}
+            style={{
+              background: "var(--bg-surface)", border: "1px solid var(--border)",
+              borderRadius: 10, padding: "6px 14px", color: "var(--text-secondary)",
+              fontSize: 12, cursor: "pointer",
+            }}
+          >Mark all read</motion.button>
         )}
       </div>
 
-      <div className="flex flex-col gap-3 overflow-y-auto flex-1">
-        {feed.map((item) => (
-          <FeedCard key={item.id} item={item} />
-        ))}
-        {feed.length === 0 && (
-          <div className="glass rounded-2xl p-8 text-center text-white/40">
-            <div className="text-4xl mb-2">📡</div>
-            <div>Nothing yet — agents are standing by</div>
-          </div>
-        )}
+      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+        <AnimatePresence>
+          {feed.length === 0 ? (
+            <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 48 }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📡</div>
+              <div style={{ fontSize: 14 }}>Nothing yet — agents are standing by</div>
+            </div>
+          ) : (
+            feed.map(item => <Card key={item.id} item={item} />)
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
