@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Sidebar } from "./components/Sidebar";
 import { AgentFloor } from "./views/AgentFloor";
 import { MissionCalendar } from "./views/MissionCalendar";
@@ -64,12 +65,14 @@ function App() {
   }, []);
 
   return (
-    <div className="w-screen h-screen flex overflow-hidden bg-ocean-900">
-      <Sidebar />
-      <div className="flex-1 h-full overflow-hidden">
-        <ViewContent />
+    <TooltipProvider>
+      <div className="w-screen h-screen flex overflow-hidden bg-ocean-900">
+        <Sidebar />
+        <div className="flex-1 h-full overflow-hidden">
+          <ViewContent />
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
 
