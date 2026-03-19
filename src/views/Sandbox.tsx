@@ -30,7 +30,7 @@ const DEMO_PROJECTS: Project[] = [
 ];
 
 export function Sandbox() {
-  const [projects, setProjects] = useState<Project[]>(DEMO_PROJECTS);
+  const [projects] = useState<Project[]>(DEMO_PROJECTS);
 
   return (
     <div className="h-full flex flex-col p-6 gap-4 overflow-hidden">

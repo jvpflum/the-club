@@ -1,5 +1,5 @@
 import { useEffect, lazy, Suspense, useRef } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Sidebar } from "./components/Sidebar";
 import { useClubStore } from "./store/useClubStore";
@@ -13,7 +13,7 @@ const Sandbox         = lazy(() => import("./views/Sandbox").then(m => ({ defaul
 const LiveBuild       = lazy(() => import("./views/LiveBuild").then(m => ({ default: m.LiveBuild })));
 
 // Mount once, show/hide (no remount on tab switch)
-function ViewSlot({ id, active, children }: { id: string; active: boolean; children: React.ReactNode }) {
+function ViewSlot({ active, children }: { id: string; active: boolean; children: React.ReactNode }) {
   const mounted = useRef(false);
   if (active && !mounted.current) mounted.current = true;
   if (!mounted.current) return null;

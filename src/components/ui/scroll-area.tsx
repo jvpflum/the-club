@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import * as React from "react" // eslint-disable-line @typescript-eslint/no-unused-vars
 import { ScrollArea as ScrollAreaPrimitive } from "@base-ui/react/scroll-area"
 
 import { cn } from "@/lib/utils"
