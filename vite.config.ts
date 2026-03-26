@@ -4,8 +4,10 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 const host = process.env.TAURI_DEV_HOST;
+const isTauriDev = !!process.env.TAURI_DEV_HOST || !!process.env.TAURI_ENV_ARCH;
 
 export default defineConfig(async () => ({
+  base: isTauriDev ? "/" : "/the-club/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
