@@ -1,12 +1,13 @@
+import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useClubStore, FeedItem } from "../store/useClubStore";
 
 const TYPE = {
-  brief:     { emoji: "☀️", color: "var(--sand)",  label: "Morning Brief" },
-  alert:     { emoji: "🚨", color: "var(--coral)", label: "Alert" },
-  heartbeat: { emoji: "💓", color: "var(--ocean)", label: "Heartbeat" },
-  agent:     { emoji: "🤖", color: "var(--palm)",  label: "Agent" },
-  system:    { emoji: "⚙️", color: "var(--text-muted)", label: "System" },
+  brief:     { emoji: "\u2600\uFE0F", color: "var(--sand)",  label: "Morning Brief" },
+  alert:     { emoji: "\uD83D\uDEA8", color: "var(--coral)", label: "Alert" },
+  heartbeat: { emoji: "\uD83D\uDC93", color: "var(--ocean)", label: "Heartbeat" },
+  agent:     { emoji: "\uD83E\uDD16", color: "var(--palm)",  label: "Agent" },
+  system:    { emoji: "\u2699\uFE0F", color: "var(--text-muted)", label: "System" },
 };
 
 function Card({ item }: { item: FeedItem }) {
@@ -53,6 +54,15 @@ function Card({ item }: { item: FeedItem }) {
 export function BriefingFeed() {
   const { feed } = useClubStore();
   const unread = feed.filter(f => !f.read).length;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const gatewayStatus = useClubStore(s => s.gatewayStatus);
+
+  // Auto-scroll to top when new events arrive (newest first)
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [feed.length]);
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", padding: 24, gap: 20, overflow: "hidden" }}>
@@ -60,7 +70,9 @@ export function BriefingFeed() {
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "var(--text-primary)" }}>Briefing Feed</h1>
           <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-            {unread > 0 ? `${unread} unread` : "All caught up ✓"}
+            {feed.length === 0
+              ? gatewayStatus === "connected" ? "Listening for events\u2026" : "Gateway offline"
+              : unread > 0 ? `${unread} unread` : "All caught up \u2713"}
           </p>
         </div>
         {unread > 0 && (
@@ -75,12 +87,16 @@ export function BriefingFeed() {
         )}
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
         <AnimatePresence>
           {feed.length === 0 ? (
             <div style={{ textAlign: "center", color: "var(--text-muted)", padding: 48 }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📡</div>
-              <div style={{ fontSize: 14 }}>Nothing yet — agents are standing by</div>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>{"\uD83D\uDCE1"}</div>
+              <div style={{ fontSize: 14 }}>
+                {gatewayStatus === "connected"
+                  ? "Waiting for events from the gateway\u2026"
+                  : "Connect to the gateway to see live events"}
+              </div>
             </div>
           ) : (
             feed.map(item => <Card key={item.id} item={item} />)

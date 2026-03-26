@@ -238,9 +238,8 @@ function TabBar({ active, onChange }: { active: SystemTab; onChange: (t: SystemT
 
 /* ─── Health Bar ─── */
 function HealthBar({ jobs }: { jobs: SystemCronJob[] }) {
-  const gw = useClubStore(s => s.gatewayConnected);
-  const isBrowser = gw === "browser";
-  const isConnected = gw === true;
+  const gw = useClubStore(s => s.gatewayStatus);
+  const isConnected = gw === "connected";
   const enabled = jobs.filter(j => j.enabled);
   const healthy = enabled.filter(j => (j.state?.consecutiveErrors ?? 0) === 0);
   const withErrors = enabled.filter(j => (j.state?.consecutiveErrors ?? 0) > 0);
@@ -255,8 +254,8 @@ function HealthBar({ jobs }: { jobs: SystemCronJob[] }) {
     </div>
   );
 
-  const gwDotColor = isBrowser ? "#8b5cf6" : isConnected ? "var(--palm)" : "var(--coral)";
-  const gwLabel = isBrowser ? "BROWSER" : isConnected ? "GATEWAY" : "GW OFFLINE";
+  const gwDotColor = isConnected ? "var(--palm)" : gw === "connecting" ? "#fbbf24" : "var(--coral)";
+  const gwLabel = isConnected ? "GATEWAY" : gw === "connecting" ? "CONNECTING" : "GW OFFLINE";
 
   return (
     <div style={{
@@ -270,7 +269,7 @@ function HealthBar({ jobs }: { jobs: SystemCronJob[] }) {
       <Stat label="runs today" value={runsToday} color="var(--ocean)" />
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <motion.div
-          animate={isConnected ? { opacity: [1, 0.4, 1] } : isBrowser ? { opacity: [1, 0.6, 1] } : { opacity: 1 }}
+          animate={isConnected || gw === "connecting" ? { opacity: [1, 0.4, 1] } : { opacity: 1 }}
           transition={{ duration: 1.5, repeat: Infinity }}
           style={{
             width: 8, height: 8, borderRadius: 99,

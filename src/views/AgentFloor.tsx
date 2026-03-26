@@ -1,10 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { toast } from "sonner";
-import { useClubStore, AgentStatus } from "../store/useClubStore";
+import { useClubStore } from "../store/useClubStore";
 import { AgentCharacter } from "../components/AgentCharacter";
-
-const isTauri = !!(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
 
 /* ── Seagulls ── */
 const SEAGULLS = [
@@ -34,7 +31,7 @@ function Seagulls() {
             animate={{ y: [0, -6, 0, 4, 0] }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
           >
-            🦅
+            {"\uD83E\uDD85"}
           </motion.div>
         </motion.div>
       ))}
@@ -78,7 +75,7 @@ function JumpingFish() {
             zIndex: 2,
           }}
         >
-          🐟
+          {"\uD83D\uDC1F"}
         </motion.div>
       )}
     </AnimatePresence>
@@ -163,53 +160,9 @@ function ShootingStar() {
   );
 }
 
-/* ── Demo mode status cycling ── */
-function useDemoModeCycling() {
-  useEffect(() => {
-    if (isTauri) return;
-    const statusCycle: AgentStatus[] = ["idle", "working", "thinking", "done"];
-    const taskMap: Record<AgentStatus, string> = {
-      idle: "Standing by",
-      working: "Processing...",
-      thinking: "Analyzing...",
-      done: "Task complete",
-      error: "Error state",
-    };
-
-    const iv = setInterval(() => {
-      const store = useClubStore.getState();
-      const candidates = store.agents.filter(a => a.id !== "juiceclaw-main" && a.id !== "scheduler-main");
-      if (candidates.length === 0) return;
-      const agent = candidates[Math.floor(Math.random() * candidates.length)];
-      const currentIdx = statusCycle.indexOf(agent.status);
-      const nextStatus = statusCycle[(currentIdx + 1) % statusCycle.length];
-      store.updateAgent(agent.id, { status: nextStatus, task: taskMap[nextStatus] });
-    }, 8000);
-
-    return () => clearInterval(iv);
-  }, []);
-}
-
 export function AgentFloor() {
   const agents = useClubStore(s => s.agents);
-  useDemoModeCycling();
-
-  const handleSpawn = useCallback(() => {
-    const emojis = ["🤖","🦾","💡","⚡","🔬"];
-    const names = ["Sub-Agent", "Scout", "Runner", "Analyst", "Worker"];
-    const idx = Math.floor(Math.random() * emojis.length);
-    const name = names[idx];
-    useClubStore.getState().addAgent({
-      id: `agent-${Date.now()}`,
-      name,
-      emoji: emojis[idx],
-      status: "working",
-      task: "Running task...",
-      spawnedAt: new Date(),
-      position: { x: 50, y: 60 },
-    });
-    toast(name + " spawned", { description: name + " deployed to the beach", duration: 3000 });
-  }, []);
+  const gatewayStatus = useClubStore(s => s.gatewayStatus);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
@@ -267,7 +220,7 @@ export function AgentFloor() {
           animate={{ x: [0, 15, 0] }}
           transition={{ duration: c.duration, repeat: Infinity, ease: "easeInOut", delay: c.delay }}
           style={{ position: "absolute", left: c.left, top: c.top, fontSize: `${2.4 * c.scale}rem`, opacity: 0.55, filter: "blur(0.5px)" }}
-        >☁️</motion.div>
+        >{"\u2601\uFE0F"}</motion.div>
       ))}
 
       {/* ── Ocean ── */}
@@ -283,7 +236,7 @@ export function AgentFloor() {
         }}
       />
 
-      {/* ── Wave shimmer (with crash effect) ── */}
+      {/* ── Wave shimmer ── */}
       <motion.div
         animate={{ x: [0, -30, 0], opacity: [0.18, 0.7, 0.18] }}
         transition={{
@@ -331,17 +284,17 @@ export function AgentFloor() {
             transformOrigin: "bottom center",
             filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.4))",
           }}
-        >🌴</motion.div>
+        >{"\uD83C\uDF34"}</motion.div>
       ))}
 
       {/* ── Umbrella + chair ── */}
-      <div style={{ position: "absolute", bottom: "29.5%", left: "14%", fontSize: "1.6rem", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.3))" }}>⛱️</div>
-      <div style={{ position: "absolute", bottom: "28.5%", right: "18%", fontSize: "1.3rem" }}>🏄</div>
+      <div style={{ position: "absolute", bottom: "29.5%", left: "14%", fontSize: "1.6rem", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.3))" }}>{"\u26F1\uFE0F"}</div>
+      <div style={{ position: "absolute", bottom: "28.5%", right: "18%", fontSize: "1.3rem" }}>{"\uD83C\uDFC4"}</div>
       <motion.div
         animate={{ y: [0, -3, 0] }}
         transition={{ duration: 2, repeat: Infinity }}
         style={{ position: "absolute", bottom: "28.5%", right: "30%", fontSize: "1rem" }}
-      >🦀</motion.div>
+      >{"\uD83E\uDD80"}</motion.div>
 
       {/* ── "Agent Floor" label ── */}
       <div style={{
@@ -364,7 +317,7 @@ export function AgentFloor() {
         Agent Floor
       </div>
 
-      {/* ── Agent characters ── */}
+      {/* ── Agent characters (real sessions) ── */}
       <div style={{
         position: "absolute",
         bottom: "33%",
@@ -376,15 +329,41 @@ export function AgentFloor() {
         padding: "0 40px",
       }}>
         <AnimatePresence>
-          {agents.map(agent => <AgentCharacter key={agent.id} agent={agent} />)}
+          {agents.length > 0 ? (
+            agents.map(agent => <AgentCharacter key={agent.id} agent={agent} />)
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={{
+                background: "rgba(6,13,26,0.60)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                backdropFilter: "blur(12px)",
+                borderRadius: 16,
+                padding: "16px 28px",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 28, marginBottom: 6 }}>{"\uD83C\uDFD6\uFE0F"}</div>
+              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 13, fontWeight: 500 }}>
+                {gatewayStatus === "connected" ? "No active sessions" : "Gateway offline"}
+              </div>
+              <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, marginTop: 4 }}>
+                {gatewayStatus === "connected"
+                  ? "Agents will appear when jobs run"
+                  : "Waiting for gateway connection\u2026"}
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
       {/* ── Stats bar (top-left) ── */}
       <div style={{ position: "absolute", top: 16, left: 16, display: "flex", gap: 8 }}>
         {[
-          { icon: "🏖️", val: `${agents.length} agents` },
-          { icon: "⚡", val: `${agents.filter(a => a.status !== "idle").length} active` },
+          { icon: "\uD83C\uDFD6\uFE0F", val: `${agents.length} agents` },
+          { icon: "\u26A1", val: `${agents.filter(a => a.status !== "idle").length} active` },
         ].map(s => (
           <div key={s.val} style={{
             display: "flex", alignItems: "center", gap: 6,
@@ -396,23 +375,6 @@ export function AgentFloor() {
           </div>
         ))}
       </div>
-
-      {/* ── Spawn button ── */}
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={handleSpawn}
-        style={{
-          position: "absolute", bottom: 16, right: 16,
-          display: "flex", alignItems: "center", gap: 8,
-          background: "rgba(56,189,248,0.15)", border: "1px solid rgba(56,189,248,0.30)",
-          backdropFilter: "blur(16px)", borderRadius: 12, padding: "8px 16px",
-          color: "var(--ocean)", fontSize: 12, fontWeight: 600,
-          cursor: "pointer", letterSpacing: "0.02em",
-        }}
-      >
-        <span>+ Spawn Agent</span><span>🤖</span>
-      </motion.button>
     </div>
   );
 }
