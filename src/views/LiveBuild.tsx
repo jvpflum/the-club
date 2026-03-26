@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Graceful fallback — invoke only works inside Tauri desktop app
-const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const invoke: (cmd: string, args?: any) => Promise<any> = isTauri
-  ? (await import("@tauri-apps/api/core")).invoke
-  : () => Promise.resolve({ stdout: "", stderr: "", code: 0 });
+const invoke = (window as any).__TAURI_INTERNALS__
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ? (cmd: string, args?: any) => import("@tauri-apps/api/core").then(m => m.invoke(cmd, args))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  : (_cmd: string, _args?: any): Promise<{ stdout: string; stderr: string; code: number }> =>
+      Promise.resolve({ stdout: "", stderr: "", code: 0 });
 
 interface Commit {
   hash: string;
