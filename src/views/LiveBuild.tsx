@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+interface CommandResult { stdout: string; stderr: string; code: number; }
+
 // Graceful fallback — invoke only works inside Tauri desktop app
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const invoke = (window as any).__TAURI_INTERNALS__
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ? (cmd: string, args?: any) => import("@tauri-apps/api/core").then(m => m.invoke(cmd, args))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  : (_cmd: string, _args?: any): Promise<{ stdout: string; stderr: string; code: number }> =>
-      Promise.resolve({ stdout: "", stderr: "", code: 0 });
+const isTauri = !!(window as any).__TAURI_INTERNALS__;
+async function invokeCmd(cmd: string, args?: Record<string, unknown>): Promise<CommandResult> {
+  if (!isTauri) return { stdout: "", stderr: "", code: 0 };
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<CommandResult>(cmd, args);
+}
 
 interface Commit {
   hash: string;
@@ -60,7 +62,7 @@ export function LiveBuild() {
 
   const fetchCommits = async () => {
     try {
-      const result = await invoke<{ stdout: string; code: number }>("execute_command", {
+      const result = await invokeCmd("execute_command", {
         command: `git -C "${REPO_PATH}" log --pretty=format:"%H|%s|%an|%ar|%ad" --date=short --numstat -20`,
         cwd: null,
       });
@@ -113,11 +115,11 @@ export function LiveBuild() {
   const fetchStats = async () => {
     try {
       const [fileResult, commitResult] = await Promise.all([
-        invoke<{ stdout: string }>("execute_command", {
+        invokeCmd("execute_command", {
           command: `(Get-ChildItem -Path "${REPO_PATH}\\src" -Recurse -Filter "*.tsx","*.ts" -ErrorAction SilentlyContinue | Measure-Object).Count`,
           cwd: null,
         }),
-        invoke<{ stdout: string }>("execute_command", {
+        invokeCmd("execute_command", {
           command: `git -C "${REPO_PATH}" rev-list --count HEAD`,
           cwd: null,
         }),
