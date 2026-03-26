@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useClubStore, SystemCronJob, SystemTab } from "../store/useClubStore";
 
+const isTauri = !!(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
+
 /* ─── Topic Map ─── */
 const TOPIC_MAP: Record<number, string> = {
   1: "General", 13: "Tasks", 14: "Email", 15: "Calendar", 16: "Finance",
@@ -184,6 +186,22 @@ function cronFireTimes(expr: string): number[] {
   return times.sort((a, b) => a - b);
 }
 
+/* ─── Browser Mode Banner ─── */
+function BrowserBanner() {
+  if (isTauri) return null;
+  return (
+    <div style={{
+      display: "inline-flex", alignItems: "center", gap: 6,
+      padding: "4px 14px", borderRadius: 99,
+      background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.25)",
+      fontSize: 11, fontWeight: 500, color: "#f59e0b",
+      marginBottom: 8,
+    }}>
+      Showing demo snapshot — connect via Tauri desktop app for live data
+    </div>
+  );
+}
+
 /* ─── Tab Bar ─── */
 function TabBar({ active, onChange }: { active: SystemTab; onChange: (t: SystemTab) => void }) {
   const tabs: { id: SystemTab; label: string }[] = [
@@ -221,6 +239,8 @@ function TabBar({ active, onChange }: { active: SystemTab; onChange: (t: SystemT
 /* ─── Health Bar ─── */
 function HealthBar({ jobs }: { jobs: SystemCronJob[] }) {
   const gw = useClubStore(s => s.gatewayConnected);
+  const isBrowser = gw === "browser";
+  const isConnected = gw === true;
   const enabled = jobs.filter(j => j.enabled);
   const healthy = enabled.filter(j => (j.state?.consecutiveErrors ?? 0) === 0);
   const withErrors = enabled.filter(j => (j.state?.consecutiveErrors ?? 0) > 0);
@@ -235,6 +255,9 @@ function HealthBar({ jobs }: { jobs: SystemCronJob[] }) {
     </div>
   );
 
+  const gwDotColor = isBrowser ? "#8b5cf6" : isConnected ? "var(--palm)" : "var(--coral)";
+  const gwLabel = isBrowser ? "BROWSER" : isConnected ? "GATEWAY" : "GW OFFLINE";
+
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 20, padding: "10px 16px",
@@ -247,15 +270,15 @@ function HealthBar({ jobs }: { jobs: SystemCronJob[] }) {
       <Stat label="runs today" value={runsToday} color="var(--ocean)" />
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <motion.div
-          animate={gw ? { opacity: [1, 0.4, 1] } : { opacity: 1 }}
+          animate={isConnected ? { opacity: [1, 0.4, 1] } : isBrowser ? { opacity: [1, 0.6, 1] } : { opacity: 1 }}
           transition={{ duration: 1.5, repeat: Infinity }}
           style={{
             width: 8, height: 8, borderRadius: 99,
-            background: gw ? "var(--palm)" : "var(--coral)",
+            background: gwDotColor,
           }}
         />
-        <span style={{ fontSize: 10, fontWeight: 600, color: gw ? "var(--palm)" : "var(--coral)", letterSpacing: "0.05em" }}>
-          {gw ? "GATEWAY" : "GW OFFLINE"}
+        <span style={{ fontSize: 10, fontWeight: 600, color: gwDotColor, letterSpacing: "0.05em" }}>
+          {gwLabel}
         </span>
       </div>
     </div>
@@ -266,26 +289,31 @@ function HealthBar({ jobs }: { jobs: SystemCronJob[] }) {
 function JobCard({ job }: { job: SystemCronJob }) {
   const badge = modelBadge(job.payload?.model ?? "");
   const errors = job.state?.consecutiveErrors ?? 0;
+  const [hovered, setHovered] = useState(false);
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
       style={{
         padding: 14,
         borderRadius: 12,
         background: "var(--bg-surface)",
-        border: "1px solid var(--glass-border)",
+        border: `1px solid ${hovered ? "rgba(255,255,255,0.18)" : "var(--glass-border)"}`,
         opacity: job.enabled ? 1 : 0.45,
         display: "flex",
         flexDirection: "column",
         gap: 8,
         minWidth: 0,
+        transform: hovered ? "translateY(-2px)" : "translateY(0)",
+        transition: "border-color 0.15s, transform 0.15s",
       }}
     >
       {/* Header row */}
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <motion.div
-          animate={errors > 0 ? { scale: [1, 1.3, 1] } : {}}
+          animate={errors > 0 ? { opacity: [1, 0.3, 1] } : {}}
           transition={{ duration: 1.2, repeat: Infinity }}
           style={{
             width: 8, height: 8, borderRadius: 99, flexShrink: 0,
@@ -403,6 +431,7 @@ function JobGrid({ jobs }: { jobs: SystemCronJob[] }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <BrowserBanner />
       {grouped.map(g => (
         <CategorySection key={g.cat} cat={g.cat} jobs={g.jobs} color={g.color} />
       ))}
@@ -442,6 +471,20 @@ function Timeline({ jobs }: { jobs: SystemCronJob[] }) {
   }, [rows]);
 
   const hourMarkers = Array.from({ length: 25 }, (_, i) => i);
+
+  // Empty state
+  if (jobs.length === 0) {
+    return (
+      <div style={{
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        padding: 60, gap: 12, color: "var(--text-muted)",
+      }}>
+        <span style={{ fontSize: 48 }}>📅</span>
+        <span style={{ fontSize: 16, fontWeight: 600, color: "var(--text-secondary)" }}>No jobs loaded</span>
+        <span style={{ fontSize: 12 }}>Open in Tauri desktop for live data</span>
+      </div>
+    );
+  }
 
   return (
     <div style={{ position: "relative", overflowX: "auto", overflowY: "auto", flex: 1 }}>
@@ -530,7 +573,7 @@ function Timeline({ jobs }: { jobs: SystemCronJob[] }) {
         </div>
       ))}
 
-      {rows.length === 0 && (
+      {rows.length === 0 && jobs.length > 0 && (
         <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>No scheduled jobs to display.</div>
       )}
     </div>

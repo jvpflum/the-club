@@ -9,10 +9,40 @@ const STATUS = {
   error:   { color: "var(--coral)",   label: "Error",      glow: "rgba(251,113,133,0.5)" },
 };
 
+/** Strip non-ASCII characters */
+function sanitizeTask(text: string): string {
+  return text.replace(/[^\x00-\x7F]/g, "").trim();
+}
+
 export function AgentCharacter({ agent }: { agent: Agent }) {
   const s = STATUS[agent.status as AgentStatus] || STATUS.idle;
   const isWorking  = agent.status === "working";
   const isThinking = agent.status === "thinking";
+  const isDone     = agent.status === "done";
+  const isError    = agent.status === "error";
+
+  // Determine avatar animation based on status
+  const avatarAnimate = isWorking
+    ? { y: [0, -4, 0], rotate: [0, 3, 0, -3, 0] }
+    : isThinking
+    ? { y: [0, -2, 0], rotate: [-3, 3, -3] }
+    : isDone
+    ? { scale: [1, 1.15, 1], y: [0, -2, 0] }
+    : isError
+    ? { x: [-4, 4, -4, 4, 0], y: 0 }
+    : { y: [0, -2, 0] };
+
+  const avatarTransition = isWorking
+    ? { y: { duration: 0.4, repeat: Infinity, ease: "easeInOut" as const }, rotate: { duration: 1.2, repeat: Infinity, ease: "easeInOut" as const } }
+    : isThinking
+    ? { y: { duration: 2, repeat: Infinity, ease: "easeInOut" as const }, rotate: { duration: 1.4, repeat: Infinity, ease: "easeInOut" as const } }
+    : isDone
+    ? { scale: { duration: 0.5, repeat: 0 }, y: { duration: 3.5, repeat: Infinity, ease: "easeInOut" as const } }
+    : isError
+    ? { duration: 0.4, repeat: Infinity, repeatDelay: 2.6 }
+    : { duration: 3.5, repeat: Infinity, ease: "easeInOut" as const };
+
+  const taskText = agent.task ? sanitizeTask(agent.task) : "";
 
   return (
     <motion.div
@@ -23,7 +53,7 @@ export function AgentCharacter({ agent }: { agent: Agent }) {
       style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 80 }}
     >
       {/* Task bubble */}
-      {agent.task && (
+      {taskText && (
         <motion.div
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
@@ -41,22 +71,29 @@ export function AgentCharacter({ agent }: { agent: Agent }) {
             marginBottom: 2,
           }}
         >
-          {agent.task.length > 45 ? agent.task.slice(0, 42) + "…" : agent.task}
+          {taskText.length > 45 ? taskText.slice(0, 42) + "..." : taskText}
+        </motion.div>
+      )}
+
+      {/* Thinking speech bubble */}
+      {isThinking && (
+        <motion.div
+          animate={{ opacity: [0, 1, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          style={{
+            fontSize: 14,
+            color: "var(--sand)",
+            marginBottom: -4,
+          }}
+        >
+          ...
         </motion.div>
       )}
 
       {/* Avatar */}
       <motion.div
-        animate={
-          isWorking  ? { y: [0, -4, 0] } :
-          isThinking ? { rotate: [-3, 3, -3] } :
-          { y: [0, -2, 0] }
-        }
-        transition={{
-          duration: isWorking ? 0.55 : isThinking ? 1.4 : 3.5,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+        animate={avatarAnimate}
+        transition={avatarTransition}
         style={{ position: "relative" }}
       >
         <div style={{
@@ -92,6 +129,15 @@ export function AgentCharacter({ agent }: { agent: Agent }) {
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             style={{ position: "absolute", top: -4, right: -4, fontSize: 13 }}
           >⚙️</motion.div>
+        )}
+
+        {/* Error shake indicator */}
+        {isError && (
+          <motion.div
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ duration: 1, repeat: Infinity }}
+            style={{ position: "absolute", top: -6, right: -6, fontSize: 12 }}
+          >⚠️</motion.div>
         )}
       </motion.div>
 

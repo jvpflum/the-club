@@ -1,9 +1,215 @@
+import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useClubStore } from "../store/useClubStore";
+import { toast } from "sonner";
+import { useClubStore, AgentStatus } from "../store/useClubStore";
 import { AgentCharacter } from "../components/AgentCharacter";
+
+const isTauri = !!(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
+
+/* ── Seagulls ── */
+const SEAGULLS = [
+  { y: 12, duration: 20, delay: 0 },
+  { y: 22, duration: 28, delay: 5 },
+  { y: 8,  duration: 35, delay: 12 },
+];
+
+function Seagulls() {
+  return (
+    <>
+      {SEAGULLS.map((s, i) => (
+        <motion.div
+          key={i}
+          animate={{ x: ["-10%", "110%"] }}
+          transition={{ duration: s.duration, repeat: Infinity, delay: s.delay, ease: "linear" }}
+          style={{
+            position: "absolute",
+            top: `${s.y}%`,
+            left: 0,
+            fontSize: "1.2rem",
+            opacity: 0.7,
+            pointerEvents: "none",
+          }}
+        >
+          <motion.div
+            animate={{ y: [0, -6, 0, 4, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          >
+            🦅
+          </motion.div>
+        </motion.div>
+      ))}
+    </>
+  );
+}
+
+/* ── Jumping Fish ── */
+function JumpingFish() {
+  const [visible, setVisible] = useState(false);
+  const [xPos, setXPos] = useState(50);
+
+  useEffect(() => {
+    const scheduleJump = () => {
+      const delay = 8000 + Math.random() * 7000;
+      return setTimeout(() => {
+        setXPos(15 + Math.random() * 70);
+        setVisible(true);
+        setTimeout(() => setVisible(false), 600);
+        scheduleJump();
+      }, delay);
+    };
+    const tid = scheduleJump();
+    return () => clearTimeout(tid);
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ y: 0, opacity: 0 }}
+          animate={{ y: -40, opacity: 1 }}
+          exit={{ y: 0, opacity: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          style={{
+            position: "absolute",
+            bottom: "29%",
+            left: `${xPos}%`,
+            fontSize: "1.2rem",
+            pointerEvents: "none",
+            zIndex: 2,
+          }}
+        >
+          🐟
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ── Footprints in sand ── */
+function Footprints() {
+  const prints = [
+    { left: "25%", bottom: "18%" },
+    { left: "28%", bottom: "16%" },
+    { left: "55%", bottom: "12%" },
+    { left: "57%", bottom: "10%" },
+    { left: "72%", bottom: "20%" },
+    { left: "74%", bottom: "18%" },
+    { left: "40%", bottom: "8%" },
+    { left: "42%", bottom: "6%" },
+  ];
+  return (
+    <>
+      {prints.map((p, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            left: p.left,
+            bottom: p.bottom,
+            width: 3,
+            height: 3,
+            borderRadius: "50%",
+            background: "rgba(180,140,80,0.4)",
+            pointerEvents: "none",
+          }}
+        />
+      ))}
+    </>
+  );
+}
+
+/* ── Shooting Star ── */
+function ShootingStar() {
+  const [visible, setVisible] = useState(false);
+  const [pos, setPos] = useState({ x: 20, y: 10 });
+
+  useEffect(() => {
+    const scheduleStar = () => {
+      const delay = 15000 + Math.random() * 30000;
+      return setTimeout(() => {
+        setPos({ x: 10 + Math.random() * 50, y: 5 + Math.random() * 25 });
+        setVisible(true);
+        setTimeout(() => setVisible(false), 400);
+        scheduleStar();
+      }, delay);
+    };
+    const tid = scheduleStar();
+    return () => clearTimeout(tid);
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, x: 0, y: 0 }}
+          animate={{ opacity: [0, 1, 0], x: 80, y: 80 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4 }}
+          style={{
+            position: "absolute",
+            top: `${pos.y}%`,
+            left: `${pos.x}%`,
+            width: 2,
+            height: 40,
+            background: "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, transparent 100%)",
+            transform: "rotate(45deg)",
+            borderRadius: 1,
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ── Demo mode status cycling ── */
+function useDemoModeCycling() {
+  useEffect(() => {
+    if (isTauri) return;
+    const statusCycle: AgentStatus[] = ["idle", "working", "thinking", "done"];
+    const taskMap: Record<AgentStatus, string> = {
+      idle: "Standing by",
+      working: "Processing...",
+      thinking: "Analyzing...",
+      done: "Task complete",
+      error: "Error state",
+    };
+
+    const iv = setInterval(() => {
+      const store = useClubStore.getState();
+      const candidates = store.agents.filter(a => a.id !== "juiceclaw-main" && a.id !== "scheduler-main");
+      if (candidates.length === 0) return;
+      const agent = candidates[Math.floor(Math.random() * candidates.length)];
+      const currentIdx = statusCycle.indexOf(agent.status);
+      const nextStatus = statusCycle[(currentIdx + 1) % statusCycle.length];
+      store.updateAgent(agent.id, { status: nextStatus, task: taskMap[nextStatus] });
+    }, 8000);
+
+    return () => clearInterval(iv);
+  }, []);
+}
 
 export function AgentFloor() {
   const agents = useClubStore(s => s.agents);
+  useDemoModeCycling();
+
+  const handleSpawn = useCallback(() => {
+    const emojis = ["🤖","🦾","💡","⚡","🔬"];
+    const names = ["Sub-Agent", "Scout", "Runner", "Analyst", "Worker"];
+    const idx = Math.floor(Math.random() * emojis.length);
+    const name = names[idx];
+    useClubStore.getState().addAgent({
+      id: `agent-${Date.now()}`,
+      name,
+      emoji: emojis[idx],
+      status: "working",
+      task: "Running task...",
+      spawnedAt: new Date(),
+      position: { x: 50, y: 60 },
+    });
+    toast(name + " spawned", { description: name + " deployed to the beach", duration: 3000 });
+  }, []);
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden" }}>
@@ -32,6 +238,9 @@ export function AgentFloor() {
         />
       ))}
 
+      {/* ── Shooting Star ── */}
+      <ShootingStar />
+
       {/* ── Moon ── */}
       <motion.div
         animate={{ y: [0, -5, 0] }}
@@ -43,6 +252,9 @@ export function AgentFloor() {
           boxShadow: "0 0 30px rgba(253,230,138,0.35), 0 0 60px rgba(253,230,138,0.15)",
         }}
       />
+
+      {/* ── Seagulls ── */}
+      <Seagulls />
 
       {/* ── Clouds ── */}
       {[
@@ -71,10 +283,13 @@ export function AgentFloor() {
         }}
       />
 
-      {/* ── Wave shimmer ── */}
+      {/* ── Wave shimmer (with crash effect) ── */}
       <motion.div
-        animate={{ x: [0, -30, 0] }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+        animate={{ x: [0, -30, 0], opacity: [0.18, 0.7, 0.18] }}
+        transition={{
+          x: { duration: 2.5, repeat: Infinity, ease: "easeInOut" },
+          opacity: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+        }}
         style={{
           position: "absolute",
           bottom: "27.5%", left: 0, right: 0,
@@ -83,6 +298,9 @@ export function AgentFloor() {
           borderRadius: "50%",
         }}
       />
+
+      {/* ── Jumping Fish ── */}
+      <JumpingFish />
 
       {/* ── Beach sand ── */}
       <div style={{
@@ -95,6 +313,9 @@ export function AgentFloor() {
         position: "absolute", bottom: 0, left: 0, right: 0, height: "30%",
         backgroundImage: "radial-gradient(ellipse at 20% 20%, rgba(180,140,80,0.3) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(160,120,60,0.2) 0%, transparent 50%)",
       }} />
+
+      {/* ── Footprints ── */}
+      <Footprints />
 
       {/* ── Palm trees ── */}
       {[{ x: "4%", scale: 1.1 }, { x: "88%", scale: 0.9 }].map((p, i) => (
@@ -180,17 +401,7 @@ export function AgentFloor() {
       <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => {
-          useClubStore.getState().addAgent({
-            id: `agent-${Date.now()}`,
-            name: "Sub-Agent",
-            emoji: ["🤖","🦾","💡","⚡","🔬"][Math.floor(Math.random() * 5)],
-            status: "working",
-            task: "Running task...",
-            spawnedAt: new Date(),
-            position: { x: 50, y: 60 },
-          });
-        }}
+        onClick={handleSpawn}
         style={{
           position: "absolute", bottom: 16, right: 16,
           display: "flex", alignItems: "center", gap: 8,

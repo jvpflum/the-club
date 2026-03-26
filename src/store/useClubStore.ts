@@ -71,8 +71,8 @@ interface ClubStore {
   setJobs: (jobs: SystemCronJob[]) => void;
   activeSystemTab: SystemTab;
   setActiveSystemTab: (tab: SystemTab) => void;
-  gatewayConnected: boolean;
-  setGatewayConnected: (v: boolean) => void;
+  gatewayConnected: boolean | "browser";
+  setGatewayConnected: (v: boolean | "browser") => void;
   addAgent: (agent: Agent) => void;
   updateAgent: (id: string, patch: Partial<Agent>) => void;
   removeAgent: (id: string) => void;
@@ -89,10 +89,19 @@ export const useClubStore = create<ClubStore>((set) => ({
       id: "juiceclaw-main",
       name: "JuiceClaw",
       emoji: "🧃",
-      status: "idle",
-      task: "Watching the beach...",
+      status: "working",
+      task: "Watching the system...",
       spawnedAt: new Date(),
       position: { x: 20, y: 60 },
+    },
+    {
+      id: "scheduler-main",
+      name: "Scheduler",
+      emoji: "⏰",
+      status: "working",
+      task: "Firing jobs on schedule",
+      spawnedAt: new Date(),
+      position: { x: 40, y: 60 },
     },
   ],
   cronJobs: [

@@ -1,8 +1,10 @@
 import { useEffect, lazy, Suspense, useRef } from "react";
 import { motion } from "framer-motion";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "sonner";
+import { toast } from "sonner";
 import { Sidebar } from "./components/Sidebar";
-import { useClubStore } from "./store/useClubStore";
+import { useClubStore, AgentStatus } from "./store/useClubStore";
 
 // Lazy-loaded views — mount once, show/hide (Crystal pattern)
 const AgentFloor      = lazy(() => import("./views/AgentFloor").then(m => ({ default: m.AgentFloor })));
@@ -65,22 +67,35 @@ function TitleBar() {
 
 function GatewayPill() {
   const connected = useClubStore(s => s.gatewayConnected);
+  const isBrowser = connected === "browser";
+  const isConnected = connected === true;
+
+  const bg = isBrowser
+    ? "rgba(139,92,246,0.10)"
+    : isConnected ? "rgba(74,222,128,0.10)" : "rgba(251,113,133,0.10)";
+  const border = isBrowser
+    ? "rgba(139,92,246,0.25)"
+    : isConnected ? "rgba(74,222,128,0.25)" : "rgba(251,113,133,0.25)";
+  const dotColor = isBrowser
+    ? "#8b5cf6"
+    : isConnected ? "var(--palm)" : "var(--coral)";
+  const label = isBrowser
+    ? "BROWSER MODE"
+    : isConnected ? "CONNECTED" : "OFFLINE";
+
   return (
     <div
       className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-      style={{
-        background: connected ? "rgba(74,222,128,0.10)" : "rgba(251,113,133,0.10)",
-        border: `1px solid ${connected ? "rgba(74,222,128,0.25)" : "rgba(251,113,133,0.25)"}`,
-      }}
+      style={{ background: bg, border: `1px solid ${border}` }}
     >
       <motion.div
-        animate={connected ? { opacity: [1, 0.4, 1] } : { opacity: 1 }}
+        animate={isConnected ? { opacity: [1, 0.4, 1] } : isBrowser ? { opacity: [1, 0.6, 1] } : { opacity: 1 }}
         transition={{ duration: 1.5, repeat: Infinity }}
         className="w-1.5 h-1.5 rounded-full"
-        style={{ background: connected ? "var(--palm)" : "var(--coral)" }}
+        style={{ background: dotColor }}
       />
-      <span style={{ fontSize: 10, fontWeight: 600, color: connected ? "var(--palm)" : "var(--coral)", letterSpacing: "0.05em" }}>
-        {connected ? "CONNECTED" : "OFFLINE"}
+      <span style={{ fontSize: 10, fontWeight: 600, color: dotColor, letterSpacing: "0.05em" }}>
+        {label}
       </span>
     </div>
   );
@@ -101,7 +116,7 @@ function ViewContent() {
   );
 }
 
-const isTauri = !!(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
+export const isTauri = !!(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
 
 interface CommandResult { stdout: string; stderr: string; code: number }
 
@@ -149,6 +164,74 @@ function normalizeJob(raw: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
+/* ── Derive agents from jobs ── */
+function deriveAgentsFromJobs(jobs: import("./store/useClubStore").SystemCronJob[]) {
+  const store = useClubStore.getState();
+
+  // Map job name to emoji by keyword
+  function emojiForJob(name: string): string {
+    const n = name.toLowerCase();
+    if (/intelligen|research|deal flow|nvidia|war room|blog digest/i.test(n)) return "🔍";
+    if (/email|triage|yahoo/i.test(n)) return "📧";
+    if (/system|health|gateway|heartbeat|maintenance|log watch|model optim/i.test(n)) return "⚙️";
+    if (/memory|kb growth|distillation|session wrap|weekly review|backup/i.test(n)) return "🧠";
+    if (/financ|invest|portfolio|bill/i.test(n)) return "💰";
+    if (/calendar/i.test(n)) return "📅";
+    if (/home|hue|trash|neighborhood/i.test(n)) return "🏠";
+    if (/factory/i.test(n)) return "🏗️";
+    if (/brief|digest/i.test(n)) return "📰";
+    return "🤖";
+  }
+
+  function humanSchedule(expr: string): string {
+    const parts = expr.split(" ");
+    if (parts.length < 5) return expr;
+    const [min, hr, , , dow] = parts;
+    if (min.startsWith("*/")) return `Every ${min.slice(2)}m`;
+    if (hr.startsWith("*/")) return `Every ${hr.slice(2)}h`;
+    if (dow !== "*") return `Weekday schedule`;
+    const hi = parseInt(hr), mi = parseInt(min);
+    const ampm = hi >= 12 ? "pm" : "am";
+    const h12 = hi === 0 ? 12 : hi > 12 ? hi - 12 : hi;
+    return `Daily ${h12}:${String(mi).padStart(2, "0")}${ampm}`;
+  }
+
+  // Top 4 most recently run jobs
+  const sorted = [...jobs]
+    .filter(j => j.state?.lastRunAtMs)
+    .sort((a, b) => (b.state?.lastRunAtMs ?? 0) - (a.state?.lastRunAtMs ?? 0))
+    .slice(0, 4);
+
+  for (const job of sorted) {
+    const agentName = job.name.length > 12 ? job.name.slice(0, 12).trim() : job.name;
+    const errors = job.state?.consecutiveErrors ?? 0;
+    let status: AgentStatus = "idle";
+    if (errors > 0) {
+      status = "error";
+    } else if (job.state?.lastRunStatus === "ok" && job.state.lastRunAtMs > Date.now() - 3600000) {
+      status = "done";
+    }
+
+    const taskStr = (job.name.slice(0, 45) + " — " + humanSchedule(job.schedule?.expr ?? ""))
+      .replace(/[^\x00-\x7F]/g, "");
+
+    const existing = store.agents.find(a => a.id === job.id);
+    if (existing) {
+      store.updateAgent(job.id, { name: agentName, emoji: emojiForJob(job.name), status, task: taskStr });
+    } else {
+      store.addAgent({
+        id: job.id,
+        name: agentName,
+        emoji: emojiForJob(job.name),
+        status,
+        task: taskStr,
+        spawnedAt: new Date(),
+        position: { x: 30 + Math.random() * 40, y: 60 },
+      });
+    }
+  }
+}
+
 export default function App() {
   const setGatewayConnected = useClubStore(s => s.setGatewayConnected);
   const setJobs = useClubStore(s => s.setJobs);
@@ -169,8 +252,11 @@ export default function App() {
           const resp = await fetch(`${base}jobs-snapshot.json`);
           if (resp.ok) raw = await resp.json();
         }
-        if (Array.isArray(raw)) {
-          setJobs(raw.map((j) => normalizeJob(j as Record<string, unknown>) as never));
+        if (Array.isArray(raw) && raw.length > 0) {
+          const normalized = raw.map((j) => normalizeJob(j as Record<string, unknown>) as never);
+          setJobs(normalized);
+          deriveAgentsFromJobs(normalized);
+          toast.success("System loaded", { description: `${normalized.length} jobs active`, duration: 2000 });
         }
       } catch {
         // silently fail — jobs will be empty
@@ -178,8 +264,12 @@ export default function App() {
     })();
   }, []);
 
-  // Gateway connection via port check (no raw WebSocket — needs auth token)
+  // Gateway connection — skip entirely in browser mode
   useEffect(() => {
+    if (!isTauri) {
+      setGatewayConnected("browser");
+      return;
+    }
     const check = async () => {
       try {
         const r = await fetch("http://127.0.0.1:18789/health", { signal: AbortSignal.timeout(2000) });
@@ -195,6 +285,7 @@ export default function App() {
 
   return (
     <TooltipProvider>
+      <Toaster position="bottom-right" theme="dark" />
       <div style={{ display: "flex", flexDirection: "column", height: "100vh", width: "100vw", overflow: "hidden", background: "var(--bg-base)" }}>
         <TitleBar />
         <div style={{ flex: 1, display: "flex", minHeight: 0, overflow: "hidden" }}>
