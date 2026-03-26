@@ -1,7 +1,8 @@
 import { create } from "zustand";
 
 export type AgentStatus = "working" | "thinking" | "idle" | "done" | "error";
-export type View = "floor" | "calendar" | "skills" | "feed" | "sandbox" | "livebuild";
+export type View = "floor" | "calendar" | "skills" | "feed" | "sandbox" | "livebuild" | "system";
+export type SystemTab = "grid" | "timeline" | "map";
 
 export interface Agent {
   id: string;
@@ -22,6 +23,22 @@ export interface CronJob {
   nextRun?: Date;
   lastRun?: Date;
   description?: string;
+}
+
+export interface SystemCronJob {
+  id: string;
+  name: string;
+  enabled: boolean;
+  schedule: { kind: string; expr: string; tz: string };
+  payload: { model: string; message: string; kind: string };
+  delivery: { threadId: number | null; to: string; mode: string };
+  state: {
+    consecutiveErrors: number;
+    lastRunAtMs: number;
+    nextRunAtMs: number;
+    lastRunStatus: string;
+    lastDurationMs: number;
+  };
 }
 
 export interface FeedItem {
@@ -50,6 +67,10 @@ interface ClubStore {
   cronJobs: CronJob[];
   feed: FeedItem[];
   skills: Skill[];
+  jobs: SystemCronJob[];
+  setJobs: (jobs: SystemCronJob[]) => void;
+  activeSystemTab: SystemTab;
+  setActiveSystemTab: (tab: SystemTab) => void;
   gatewayConnected: boolean;
   setGatewayConnected: (v: boolean) => void;
   addAgent: (agent: Agent) => void;
@@ -101,6 +122,10 @@ export const useClubStore = create<ClubStore>((set) => ({
     { id: "clawhub", name: "ClawHub", emoji: "🦞", description: "Browse and install new skills", installed: true, enabled: true, version: "1.0.0" },
     { id: "oracle", name: "Oracle", emoji: "🔮", description: "Prompt + file bundling engine", installed: false, enabled: false },
   ],
+  jobs: [],
+  setJobs: (jobs) => set({ jobs }),
+  activeSystemTab: "grid",
+  setActiveSystemTab: (activeSystemTab) => set({ activeSystemTab }),
   gatewayConnected: false,
   setGatewayConnected: (gatewayConnected) => set({ gatewayConnected }),
   addAgent: (agent) => set((s) => ({ agents: [...s.agents, agent] })),

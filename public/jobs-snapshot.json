@@ -1,0 +1,92 @@
+[
+  {
+    "id": "daily-brief-001",
+    "name": "Daily Brief",
+    "enabled": true,
+    "schedule": { "kind": "cron", "expr": "0 9 * * *", "tz": "America/Los_Angeles" },
+    "payload": { "model": "claude-sonnet-4-20250514", "message": "Generate the daily executive briefing", "kind": "prompt" },
+    "delivery": { "threadId": 30, "to": "telegram", "mode": "send" },
+    "state": { "consecutiveErrors": 0, "lastRunAtMs": 1711396800000, "nextRunAtMs": 1711483200000, "lastRunStatus": "ok", "lastDurationMs": 23400 }
+  },
+  {
+    "id": "email-triage-002",
+    "name": "Email Triage",
+    "enabled": true,
+    "schedule": { "kind": "cron", "expr": "0 */3 * * *", "tz": "America/Los_Angeles" },
+    "payload": { "model": "claude-sonnet-4-20250514", "message": "Triage new emails and summarize important ones", "kind": "prompt" },
+    "delivery": { "threadId": 14, "to": "telegram", "mode": "send" },
+    "state": { "consecutiveErrors": 0, "lastRunAtMs": 1711393200000, "nextRunAtMs": 1711404000000, "lastRunStatus": "ok", "lastDurationMs": 18200 }
+  },
+  {
+    "id": "nvidia-warroom-003",
+    "name": "NVIDIA War Room",
+    "enabled": true,
+    "schedule": { "kind": "cron", "expr": "0 8 * * 1-5", "tz": "America/Los_Angeles" },
+    "payload": { "model": "claude-sonnet-4-20250514", "message": "NVIDIA stock analysis and news digest", "kind": "prompt" },
+    "delivery": { "threadId": 497, "to": "telegram", "mode": "send" },
+    "state": { "consecutiveErrors": 1, "lastRunAtMs": 1711360800000, "nextRunAtMs": 1711447200000, "lastRunStatus": "error", "lastDurationMs": 45100 }
+  },
+  {
+    "id": "gateway-heartbeat-004",
+    "name": "Gateway Heartbeat",
+    "enabled": true,
+    "schedule": { "kind": "cron", "expr": "*/5 * * * *", "tz": "America/Los_Angeles" },
+    "payload": { "model": "local-mid", "message": "Check gateway health and report status", "kind": "prompt" },
+    "delivery": { "threadId": 38, "to": "telegram", "mode": "send" },
+    "state": { "consecutiveErrors": 0, "lastRunAtMs": 1711399500000, "nextRunAtMs": 1711399800000, "lastRunStatus": "ok", "lastDurationMs": 3200 }
+  },
+  {
+    "id": "hue-morning-005",
+    "name": "Hue Morning Scene",
+    "enabled": true,
+    "schedule": { "kind": "cron", "expr": "0 7 * * *", "tz": "America/Los_Angeles" },
+    "payload": { "model": "local-fast", "message": "Set morning Hue lighting scene", "kind": "prompt" },
+    "delivery": { "threadId": 17, "to": "telegram", "mode": "send" },
+    "state": { "consecutiveErrors": 0, "lastRunAtMs": 1711389600000, "nextRunAtMs": 1711476000000, "lastRunStatus": "ok", "lastDurationMs": 1800 }
+  },
+  {
+    "id": "kb-growth-006",
+    "name": "KB Growth",
+    "enabled": true,
+    "schedule": { "kind": "cron", "expr": "0 2 * * *", "tz": "America/Los_Angeles" },
+    "payload": { "model": "claude-sonnet-4-20250514", "message": "Expand knowledge base with new learnings", "kind": "prompt" },
+    "delivery": { "threadId": 38, "to": "telegram", "mode": "send" },
+    "state": { "consecutiveErrors": 0, "lastRunAtMs": 1711364400000, "nextRunAtMs": 1711450800000, "lastRunStatus": "ok", "lastDurationMs": 67800 }
+  },
+  {
+    "id": "trash-night-007",
+    "name": "Trash Night Reminder",
+    "enabled": true,
+    "schedule": { "kind": "cron", "expr": "0 19 * * 0", "tz": "America/Los_Angeles" },
+    "payload": { "model": "local-fast", "message": "Remind to take out trash bins", "kind": "prompt" },
+    "delivery": { "threadId": 17, "to": "telegram", "mode": "send" },
+    "state": { "consecutiveErrors": 0, "lastRunAtMs": 1711227600000, "nextRunAtMs": 1711832400000, "lastRunStatus": "ok", "lastDurationMs": 1200 }
+  },
+  {
+    "id": "github-digest-008",
+    "name": "GitHub Digest",
+    "enabled": true,
+    "schedule": { "kind": "cron", "expr": "0 10 * * *", "tz": "America/Los_Angeles" },
+    "payload": { "model": "claude-sonnet-4-20250514", "message": "Summarize GitHub activity across repos", "kind": "prompt" },
+    "delivery": { "threadId": 345, "to": "telegram", "mode": "send" },
+    "state": { "consecutiveErrors": 0, "lastRunAtMs": 1711400400000, "nextRunAtMs": 1711486800000, "lastRunStatus": "ok", "lastDurationMs": 15600 }
+  },
+  {
+    "id": "factory-nightly-009",
+    "name": "Factory Nightly Loop",
+    "enabled": true,
+    "schedule": { "kind": "cron", "expr": "0 1 * * *", "tz": "America/Los_Angeles" },
+    "payload": { "model": "claude-sonnet-4-20250514", "message": "Run nightly factory automation loop", "kind": "prompt" },
+    "delivery": { "threadId": 1195, "to": "telegram", "mode": "send" },
+    "state": { "consecutiveErrors": 0, "lastRunAtMs": 1711360800000, "nextRunAtMs": 1711447200000, "lastRunStatus": "ok", "lastDurationMs": 182000 }
+  },
+  {
+    "id": "log-watcher-010",
+    "name": "Log Watcher",
+    "enabled": false,
+    "schedule": { "kind": "cron", "expr": "0 */6 * * *", "tz": "America/Los_Angeles" },
+    "payload": { "model": "local-mid", "message": "Scan system logs for anomalies", "kind": "prompt" },
+    "delivery": { "threadId": 38, "to": "telegram", "mode": "send" },
+    "state": { "consecutiveErrors": 3, "lastRunAtMs": 1711310400000, "nextRunAtMs": 0, "lastRunStatus": "error", "lastDurationMs": 8900 }
+  }
+]

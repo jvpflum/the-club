@@ -10,6 +10,7 @@ const MissionCalendar = lazy(() => import("./views/MissionCalendar").then(m => (
 const BriefingFeed    = lazy(() => import("./views/BriefingFeed").then(m => ({ default: m.BriefingFeed })));
 const SkillsLab       = lazy(() => import("./views/SkillsLab").then(m => ({ default: m.SkillsLab })));
 const Sandbox         = lazy(() => import("./views/Sandbox").then(m => ({ default: m.Sandbox })));
+const SystemView      = lazy(() => import("./views/SystemView").then(m => ({ default: m.SystemView })));
 const LiveBuild       = lazy(() => import("./views/LiveBuild").then(m => ({ default: m.LiveBuild })));
 
 // Mount once, show/hide (no remount on tab switch)
@@ -94,13 +95,88 @@ function ViewContent() {
       <ViewSlot id="feed"       active={view === "feed"}>       <BriefingFeed /> </ViewSlot>
       <ViewSlot id="skills"     active={view === "skills"}>     <SkillsLab /> </ViewSlot>
       <ViewSlot id="sandbox"    active={view === "sandbox"}>    <Sandbox /> </ViewSlot>
+      <ViewSlot id="system"     active={view === "system"}>     <SystemView /> </ViewSlot>
       <ViewSlot id="livebuild"  active={view === "livebuild"}>  <LiveBuild /> </ViewSlot>
     </Suspense>
   );
 }
 
+const isTauri = !!(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
+
+interface CommandResult { stdout: string; stderr: string; code: number }
+
+async function invokeCmd(cmd: string, args?: Record<string, unknown>): Promise<CommandResult> {
+  if (!isTauri) return { stdout: "", stderr: "", code: 0 };
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<CommandResult>(cmd, args);
+}
+
+/** Parse PSObject '@{key=value; key2=value2}' strings into plain objects */
+function parsePSObject(val: unknown): Record<string, string> | null {
+  if (typeof val !== "string") return null;
+  const m = val.match(/^@\{(.+)\}$/s);
+  if (!m) return null;
+  const obj: Record<string, string> = {};
+  for (const pair of m[1].split(";")) {
+    const eq = pair.indexOf("=");
+    if (eq > 0) obj[pair.slice(0, eq).trim()] = pair.slice(eq + 1).trim();
+  }
+  return obj;
+}
+
+function normalizeJob(raw: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...raw };
+  for (const key of ["schedule", "payload", "delivery", "state"] as const) {
+    const v = out[key];
+    const parsed = parsePSObject(v);
+    if (parsed) out[key] = parsed;
+  }
+  // Coerce numeric state fields
+  if (out.state && typeof out.state === "object") {
+    const s = out.state as Record<string, unknown>;
+    s.consecutiveErrors = Number(s.consecutiveErrors) || 0;
+    s.lastRunAtMs = Number(s.lastRunAtMs) || 0;
+    s.nextRunAtMs = Number(s.nextRunAtMs) || 0;
+    s.lastDurationMs = Number(s.lastDurationMs) || 0;
+  }
+  // Coerce delivery threadId
+  if (out.delivery && typeof out.delivery === "object") {
+    const d = out.delivery as Record<string, unknown>;
+    d.threadId = d.threadId === "null" || d.threadId == null ? null : Number(d.threadId);
+  }
+  // Coerce enabled
+  if (typeof out.enabled === "string") out.enabled = out.enabled === "True" || out.enabled === "true";
+  return out;
+}
+
 export default function App() {
   const setGatewayConnected = useClubStore(s => s.setGatewayConnected);
+  const setJobs = useClubStore(s => s.setJobs);
+
+  // Load jobs on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        let raw: unknown[] = [];
+        if (isTauri) {
+          const res = await invokeCmd("execute_command", {
+            command: "Get-Content C:\\Users\\jarro\\.openclaw\\cron\\jobs.json",
+            cwd: null,
+          });
+          if (res.stdout) raw = JSON.parse(res.stdout);
+        } else {
+          const base = import.meta.env.BASE_URL || "/";
+          const resp = await fetch(`${base}jobs-snapshot.json`);
+          if (resp.ok) raw = await resp.json();
+        }
+        if (Array.isArray(raw)) {
+          setJobs(raw.map((j) => normalizeJob(j as Record<string, unknown>) as never));
+        }
+      } catch {
+        // silently fail — jobs will be empty
+      }
+    })();
+  }, []);
 
   // Gateway connection via port check (no raw WebSocket — needs auth token)
   useEffect(() => {
