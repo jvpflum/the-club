@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useClubStore, SystemCronJob, SystemTab } from "../store/useClubStore";
 
-const isTauri = !!(window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
+
 
 /* ─── Topic Map ─── */
 const TOPIC_MAP: Record<number, string> = {
@@ -186,21 +186,6 @@ function cronFireTimes(expr: string): number[] {
   return times.sort((a, b) => a - b);
 }
 
-/* ─── Browser Mode Banner ─── */
-function BrowserBanner() {
-  if (isTauri) return null;
-  return (
-    <div style={{
-      display: "inline-flex", alignItems: "center", gap: 6,
-      padding: "4px 14px", borderRadius: 99,
-      background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.25)",
-      fontSize: 11, fontWeight: 500, color: "#f59e0b",
-      marginBottom: 8,
-    }}>
-      Showing demo snapshot — connect via Tauri desktop app for live data
-    </div>
-  );
-}
 
 /* ─── Tab Bar ─── */
 function TabBar({ active, onChange }: { active: SystemTab; onChange: (t: SystemTab) => void }) {
@@ -430,13 +415,12 @@ function JobGrid({ jobs }: { jobs: SystemCronJob[] }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <BrowserBanner />
       {grouped.map(g => (
         <CategorySection key={g.cat} cat={g.cat} jobs={g.jobs} color={g.color} />
       ))}
       {jobs.length === 0 && (
         <div style={{ textAlign: "center", padding: 40, color: "var(--text-muted)" }}>
-          No jobs loaded. Connect via Tauri or add jobs-snapshot.json.
+          Waiting for gateway connection...
         </div>
       )}
     </div>
